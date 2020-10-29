@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	snowballeng "github.com/kljensen/snowball/english"
 	"os"
 	"strings"
@@ -138,16 +139,40 @@ func intersection(a []int, b []int) []int {
 	return r
 }
 
+//func main() {
+//	documents, err := loadDocuments(`enwiki.xml`)
+//	revertedIndex := make(index)
+//	if err == nil {
+//		revertedIndex.add(documents)
+//		res := revertedIndex.search("Small wild cat")
+//		for _, v := range res {
+//			fmt.Print(v)
+//		}
+//	} else {
+//		fmt.Print("载入失败")
+//	}
+//}
+
+type SearchRequestBody struct{
+	searchString string `json:"search_string"`
+}
 func main() {
+	r := gin.Default()
 	documents, err := loadDocuments(`enwiki.xml`)
 	revertedIndex := make(index)
 	if err == nil {
 		revertedIndex.add(documents)
-		res := revertedIndex.search("Small wild cat")
-		for _, v := range res {
-			fmt.Print(v)
-		}
+		r.POST("/search", func(c *gin.Context) {
+			var request SearchRequestBody
+			err = c.BindJSON(request)
+			res := revertedIndex.search(request.searchString)
+			c.JSON(200, gin.H{
+				"search_result": res,
+			})
+		})
+		r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 	} else {
-		fmt.Print("载入失败")
+		fmt.Print("文件载入失败")
 	}
+
 }
